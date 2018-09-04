@@ -122,21 +122,11 @@ class updater(object):
 		self.conn=conn
 		self.cursor=conn.cursor()
 
-
-# download file into local machine. clear old cache if no useful item found.
 	def fetch_available(self):
 		self.available_dates=[datetime.strptime(i[0],'%Y-%m-%d') for i in list(self.cursor.execute('select date from datas'))]
 	def fetch_all(self):
 		all=[i for i in self.cursor.execute('select * from datas order by date')]
 		return all
-
-
-# def test():
-	# a=updater('database.db')
-
-	# c=a.connect()
-	# for i in a.cursor.execute('select * from datas order by date'):
-	# 	print(i)
 
 
 if __name__=='__main__':
