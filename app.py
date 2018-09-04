@@ -23,13 +23,14 @@ headers={'accept':"text/html,application/xhtml+xml,application/xml;q=0.9,image/w
 def index():
 	a=updater('database.db')
 	chart=a.fetch_all()[-1000:]
+	print(chart)
 	return render_template("index.html",chart=chart)
 
 
 def url_to_name(url):
 	url=re.sub('[:/\.]|html|','',url)
 	url=re.sub('httpquotesmoney163comtradelsjysj','',url)
-	datetime.today().strftime('%Y-%m-%d')+url
+	return datetime.today().strftime('%Y-%m-%d')+url
 
  
 def render(chart):
@@ -86,6 +87,7 @@ class parser(object):
 class updater(object):
 	shz=parser(shenzhen)
 	ssh=parser(shanghai)
+
 	def __init__(self,database):
 		self.database=database
 		self.connect()
@@ -120,8 +122,8 @@ class updater(object):
 		self.conn=conn
 		self.cursor=conn.cursor()
 
-# 先把数据库下载到本地。减少查找资料.遍历今天的数据，如果原数据库里没有就加上去。找到第一个已有数据就停。
 
+# download file into local machine. clear old cache if no useful item found.
 	def fetch_available(self):
 		self.available_dates=[datetime.strptime(i[0],'%Y-%m-%d') for i in list(self.cursor.execute('select date from datas'))]
 	def fetch_all(self):
