@@ -37,6 +37,14 @@
 
     });
     </script>
+
+    <form method='POST'>
+        {{ form.hidden_tag()}}
+        {{ form.no.label }}
+        {{ form.no() }}
+        {{ form.submit.label }}
+        {{ form.submit() }}
+    </form>
     
 </body>
 
