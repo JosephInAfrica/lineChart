@@ -8,7 +8,6 @@ filedir=os.path.join(basedir,'static')
 conn=sqlite3.connect(datadir)
 c=conn.cursor()
 
-
 def parse(row):
 	row=re.sub('\r','',row)
 	row=row.replace("'",'')

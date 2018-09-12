@@ -2,12 +2,12 @@ import requests,sqlite3
 from bs4 import BeautifulSoup as Soup
 import os,re
 from jinja2 import Template
-import time
+import time,math
 from datetime import datetime
 from flask import Flask,render_template
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, SubmitField
-from wtforms.validators import Required
+from wtforms.validators import DataRequired
 
 app=Flask(__name__)
 
@@ -23,8 +23,21 @@ headers={'accept':"text/html,application/xhtml+xml,application/xml;q=0.9,image/w
 "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"}
 
 class noForm(FlaskForm):
-    no=IntegerField('how many recent days do you want the graph to cover?',validators=[Required()])
+    no=IntegerField('how many recent days do you want the graph to cover?',validators=[DataRequired()])
     submit=SubmitField('Submit')
+
+
+def movingaverage(data,days=5):
+    ma=[]
+    for i in range(days-1,len(data)):
+        for j in range(days):
+            sum=sum+data[i-j]
+        avg=sum/days
+        value=data[i]
+        ma.append(data[i][0],value)
+    return ma
+
+
 
 @app.route('/',methods=['GET','POST'])
 def index():
@@ -36,10 +49,18 @@ def index():
         return render_template('index.html',chart=data[-days:],form=form)
     return render_template("index.html",chart=data[-1000:],form=form)
 
+
+@app.template_filter('billion')
+def billion(amount):
+    return math.trunc(amount/1000000000)
+
 def url_to_name(url):
     url=re.sub('[:/\.]|html|','',url)
     url=re.sub('httpquotesmoney163comtradelsjysj','',url)
     return datetime.today().strftime('%Y-%m-%d')+url
+
+def clean(dir):
+    pass
 
 class parser(object):
     headers={'accept':"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -91,7 +112,7 @@ class DataHandler(object):
         self.connect()
         self.fetch_available_dates()
         self.update()
-        # self.conn.close()
+        self.conn.close()
 
     def update(self):
         shzdict=dict(self.shz.chart)
