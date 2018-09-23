@@ -1,18 +1,10 @@
 import requests,sqlite3
-import os,re
-import time,math
 from bs4 import BeautifulSoup as Soup
+import os,re
+from jinja2 import Template
+import time,math
 from datetime import datetime,timedelta
 
-# from flask import Flask,render_template,g
-# from flask_wtf import FlaskForm
-# from wtforms import IntegerField, SubmitField
-# from wtforms.validators import DataRequired
-
-
-# app=Flask(__name__)
-
-# app.config['SECRET_KEY']='hard to guess string'
 
 basedir=os.path.abspath(os.path.dirname(__file__))
 cachedir=os.path.join(basedir,'cache')
@@ -22,22 +14,6 @@ shenzhen="http://quotes.money.163.com/trade/lsjysj_zhishu_399106.html"
 headers={'accept':"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
 "Accept-Encoding":"gzip,deflate",
 "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"}
-
-# class noForm(FlaskForm):
-#     no=IntegerField('how many recent days do you want the graph to cover?',validators=[DataRequired()])
-#     submit=SubmitField('Submit')
-
-
-def movingaverage(data,days=5):
-    ma=[]
-    for i in range(days-1,len(data)):
-        for j in range(days):
-            sum=sum+data[i-j]
-        avg=sum/days
-        value=data[i]
-        ma.append(data[i][0],value)
-    return ma
-
 
 
 
@@ -88,20 +64,15 @@ class DataHandler(object):
 
     def update(self):
         now=datetime.now()
-
         today3pm=now.replace(hour=15,minute=0,second=0,microsecond=0)
-
-
         self.available=[i for i in self.cursor.execute('select * from datas order by date')]
         print(self.available)
-
         most_recent_data=datetime.strptime(self.available[-1][0],'%Y-%m-%d')
         # this is to check if today's info is updated.
         # if today's info is available. no need to bother.
         if now.date() == most_recent_data.date():
             print('up to date')
             return
-
         # if today is weekend. and this weeks' data has been updated. then don't bother.
         elif now.weekday()==5 or 6:
             if now.date()-most_recent_data.date()<timedelta(3) and most_recent_data.weekday()==4:
@@ -113,9 +84,6 @@ class DataHandler(object):
                 if most_recent_data.date()==now.date()-timedelta(1) and now<today3pm:
                     print('not 3pm yet')
                     return
-
-
-
 
         shz=parser(shenzhen)
         ssh=parser(shanghai)
@@ -148,13 +116,16 @@ class DataHandler(object):
         self.conn=conn
         self.cursor=conn.cursor()
 
-
 def test():
     a=DataHandler('database.db')
-    # print(a.recorded_dates[-1].date()==datetime.today().date())
-    # print(datetime.today().date())
-
-
 test()
-# if __name__=='__main__':
-#     app.run(debug=True)
+
+def movingaverage(data,days=5):
+    ma=[]
+    for i in range(days-1,len(data)):
+        for j in range(days):
+            sum=sum+data[i-j]
+        avg=sum/days
+        value=data[i]
+        ma.append(data[i][0],value)
+    return ma

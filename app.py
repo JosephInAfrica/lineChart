@@ -31,28 +31,30 @@ class noForm(FlaskForm):
 def movingaverage(data,days=5):
     ma=[]
     for i in range(days-1,len(data)):
+        sum=0
         for j in range(days):
-            sum=sum+data[i-j]
-        avg=sum/days
-        value=data[i]
-        ma.append(data[i][0],value)
-    return ma
+            sum=sum+data[i-j][1]
+        avg=round(sum/days,1)
 
+        ma.append((data[i][0],avg))
+    return ma
 
 @app.route('/',methods=['GET','POST'])
 def index():
     form=noForm()
     handler=DataHandler('database.db')
-    data=handler.available
+    origin=handler.available
+    ma5=movingaverage(origin,5)
+    ma20=movingaverage(origin,20)
     if form.validate_on_submit():
         days=form.no.data
-        return render_template('index.html',chart=data[-days:],form=form)
-    return render_template("index.html",chart=data[-500:],form=form)
+        return render_template('index.html',origin=origin[-days:],ma5=ma5[-days:],ma20=ma20[-days:],form=form)
+    return render_template("index.html",origin=origin[-300:],ma5=ma5[-300:],ma20=ma20[-300:],form=form)
 
 
-@app.template_filter('billion')
-def billion(amount):
-    return math.trunc(amount/1000000000)
+@app.template_filter('yi')
+def yi(amount):
+    return math.trunc(amount/100000000)
 
 
 def url_to_name(url):
