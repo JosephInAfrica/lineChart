@@ -20,8 +20,8 @@
             datasets: [
                 {
                     label: "当天交易额",
-                    borderColor: window.chartColors.red,
-                    fill:false,
+                    borderColor: window.chartColors.green,
+                    fill:true,
 
                     data: [{% for row in origin %} {{ row[1]|yi }}, {% endfor %}],
                 },
@@ -30,7 +30,7 @@
 
                 {
                     label: "5天移动平均",
-                    borderColor: window.chartColors.blue,
+                    borderColor: window.chartColors.red,
                     fill:false,
 
                     data: [{% for row in ma5 %} {{ row[1]|yi }}, {% endfor %}],
@@ -39,7 +39,7 @@
 
                 {
                     label: "20天移动平均",
-                    borderColor: window.chartColors.green,
+                    borderColor: window.chartColors.blue,
                     fill:false,
 
                     data: [{% for row in ma20 %} {{ row[1]|yi }}, {% endfor %}],
