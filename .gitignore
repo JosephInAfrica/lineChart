@@ -3,3 +3,5 @@
 *.db
 *prac*.py
 *test*.py
+*.pyc
+*.db
