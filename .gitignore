@@ -1,1 +1,5 @@
 /venv
+/cache
+*.db
+*prac*.py
+*test*.py

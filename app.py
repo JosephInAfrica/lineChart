@@ -3,11 +3,12 @@ from bs4 import BeautifulSoup as Soup
 import os,re
 from jinja2 import Template
 import time,math
-from datetime import datetime
-from flask import Flask,render_template
+from datetime import datetime,timedelta
+from flask import Flask,render_template,g
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, SubmitField
 from wtforms.validators import DataRequired
+
 
 app=Flask(__name__)
 
@@ -38,7 +39,6 @@ def movingaverage(data,days=5):
     return ma
 
 
-
 @app.route('/',methods=['GET','POST'])
 def index():
     form=noForm()
@@ -47,20 +47,19 @@ def index():
     if form.validate_on_submit():
         days=form.no.data
         return render_template('index.html',chart=data[-days:],form=form)
-    return render_template("index.html",chart=data[-1000:],form=form)
+    return render_template("index.html",chart=data[-500:],form=form)
 
 
 @app.template_filter('billion')
 def billion(amount):
     return math.trunc(amount/1000000000)
 
+
 def url_to_name(url):
     url=re.sub('[:/\.]|html|','',url)
     url=re.sub('httpquotesmoney163comtradelsjysj','',url)
     return datetime.today().strftime('%Y-%m-%d')+url
 
-def clean(dir):
-    pass
 
 class parser(object):
     headers={'accept':"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -76,17 +75,8 @@ class parser(object):
 
     def get_soup(self):
         url=self.url
-        try:
-            with open(os.path.join(cachedir,url_to_name(url)+".html"),'rb') as file:
-                soup=Soup(file,"lxml")
-                print('reading from cahce...\n')
-        except:
-            print("we have to download...")
-            r=requests.get(url,headers=self.headers)
-            print('done downloading')
-            with open(os.path.join(cachedir,url_to_name(url)+".html"),'wb') as file:
-                file.write(r.content)
-            soup=Soup(r.content,"lxml")
+        r=requests.get(url,headers=self.headers)
+        soup=Soup(r.content,"lxml")
         self.soup=soup
 
     def get_rows(self):
@@ -104,20 +94,49 @@ class parser(object):
         self.chart=[[row[0],row[-1]] for row in self.matrix]
 
 class DataHandler(object):
-    shz=parser(shenzhen)
-    ssh=parser(shanghai)
-
     def __init__(self,database):
         self.database=database
         self.connect()
-        self.fetch_available_dates()
         self.update()
         self.conn.close()
 
     def update(self):
-        shzdict=dict(self.shz.chart)
-        sshdict=dict(self.ssh.chart)
+        now=datetime.now()
+
+        today3pm=now.replace(hour=15,minute=0,second=0,microsecond=0)
+
+
+        self.available=[i for i in self.cursor.execute('select * from datas order by date')]
+        print(self.available)
+
+        most_recent_data=datetime.strptime(self.available[-1][0],'%Y-%m-%d')
+        # this is to check if today's info is updated.
+        # if today's info is available. no need to bother.
+        if now.date() == most_recent_data.date():
+            print('up to date')
+            return
+
+        # if today is weekend. and this weeks' data has been updated. then don't bother.
+        elif now.weekday()==5 or 6:
+            if now.date()-most_recent_data.date()<timedelta(3) and most_recent_data.weekday()==4:
+                print('Done with this week.')
+                return
+
+        # if today is weekday. and yesterday's updated. and now is not up to 3pm. don't bother.
+            else:
+                if most_recent_data.date()==now.date()-timedelta(1) and now<today3pm:
+                    print('not 3pm yet')
+                    return
+
+
+
+
+        shz=parser(shenzhen)
+        ssh=parser(shanghai)
+        shzdict=dict(shz.chart)
+        sshdict=dict(ssh.chart)
         combined={}
+
         for i in shzdict:
             try:
                 combined[i]=sshdict[i]+shzdict[i]
@@ -135,7 +154,6 @@ class DataHandler(object):
                 print(e)
             print(date_in_string,combined[i],'newly inserted')
         self.conn.commit()
-        self.available=[i for i in self.cursor.execute('select * from datas order by date')]
         self.conn.close()
 
     def connect(self):
@@ -144,8 +162,7 @@ class DataHandler(object):
         self.conn=conn
         self.cursor=conn.cursor()
 
-    def fetch_available_dates(self):
-        self.recorded_dates=[datetime.strptime(i[0],'%Y-%m-%d') for i in list(self.cursor.execute('select date from datas'))]
+
 
 if __name__=='__main__':
     app.run(debug=True)
