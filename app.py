@@ -98,48 +98,40 @@ class parser(object):
 class DataHandler(object):
     def __init__(self,database):
         self.database=database
-        self.connect()
         self.update()
-        self.conn.close()
 
-    def connect(self):
-        conn=sqlite3.connect(self.database)
-        c=conn.cursor()
-        self.conn=conn
-        self.cursor=conn.cursor()
 
     def update(self):
+        conn=sqlite3.connect(self.database)
+        cursor=conn.cursor()
         now=datetime.now()
 
         today3pm=now.replace(hour=15,minute=0,second=0,microsecond=0)
 
-        self.available=[i for i in self.cursor.execute('select * from datas order by date')]
+        self.available=[i for i in cursor.execute('select * from datas order by date')]
         self.available_dates=[i[0] for i in self.available]
         most_recent_data=datetime.strptime(self.available[-1][0],'%Y-%m-%d')
-        # this is to check if today's info is updated.
-        # if today's info is available. no need to bother.
+
+
         if now.date() == most_recent_data.date():
             print('up to date')
             return
-
+            
         # if today is weekend. and this weeks' data has been updated. then don't bother.
-        elif now.weekday()==5 or now.weekday()==6:
-            if now.date()-most_recent_data.date()<timedelta(3) and most_recent_data.weekday()==4:
-                print('Done with this week.')
-                return
-
+        elif now.weekday()==5 or now.weekday()==6 and now.date()-most_recent_data.date()<timedelta(3) and most_recent_data.weekday()==4:
+            print('Done with this week.')
+            
+        # if today is monday and last friday has been updated.and not up to 3 pm .
+        elif now<today3pm and now.weekday()==0 and most_recent_data.date()==now.date()-timedelta(3):
+            print('not 3pm yet')
+            return
         # if today is weekday. and yesterday's updated. and now is not up to 3pm. don't bother.
-        elif now<today3pm:
+        elif now<today3pm and most_recent_data.date()==now.date()-timedelta(1):
+            print('not 3pm yet')
+            return
 
-            if now.weekday()==0:
-                if most_recent_data.date()==now.date()-timedelta(3):
-                    print('not 3pm yet')
-                    return
-            elif most_recent_data.date()==now.date()-timedelta(1):
-                print('not 3pm yet')
-                return
         else:
-                
+            print('updating')    
             shz=parser(shenzhen)
             ssh=parser(shanghai)
             shzdict=dict(shz.chart)
@@ -160,12 +152,13 @@ class DataHandler(object):
                 if datei in self.available_dates:
                     break
                 try:
-                    self.cursor.execute('insert into datas values (?,?)',(date_in_string,combined[i]))
+                    cursor.execute('insert into datas values (?,?)',(date_in_string,combined[i]))
                 except BaseException as e:
                     print(e)
                 print(date_in_string,combined[i],'newly inserted')
-            self.conn.commit()
-
+            conn.commit()
+            self.available=[i for i in cursor.execute('select * from datas order by date')]
+            conn.close()
 
 
 if __name__=='__main__':
