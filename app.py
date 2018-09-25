@@ -148,14 +148,13 @@ class DataHandler(object):
             for i in sorted(combined.keys(),reverse=True):
                 datei=datetime.strftime(datetime.strptime(str(i),'%Y%m%d'),'%Y-%m-%d')
                 print(datei)
-                # date_in_string=datetime.strftime(datei,'%Y-%m-%d')
                 if datei in self.available_dates:
                     break
                 try:
-                    cursor.execute('insert into datas values (?,?)',(date_in_string,combined[i]))
+                    cursor.execute('insert into datas values (?,?)',(datei,combined[i]))
                 except BaseException as e:
                     print(e)
-                print(date_in_string,combined[i],'newly inserted')
+                print(datei,combined[i],'newly inserted')
             conn.commit()
             self.available=[i for i in cursor.execute('select * from datas order by date')]
             conn.close()
