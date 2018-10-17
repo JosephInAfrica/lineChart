@@ -8,6 +8,7 @@ filedir=os.path.join(basedir,'static')
 conn=sqlite3.connect(datadir)
 c=conn.cursor()
 
+
 def parse(row):
 	row=re.sub('\r','',row)
 	row=row.replace("'",'')
@@ -15,6 +16,8 @@ def parse(row):
 	data_row=[row[0],row[1],float(row[6]),float(row[3]),float(row[5]),float(row[4]),*row[8:]]
 	data_row=data_row[:2]+list(map(lambda x:float(x) if x else x,data_row[2:]))
 	return [data_row[0],data_row[-1]]
+
+
 
 def combine(csv1,csv2):
 	matrix1=read(csv1)
@@ -29,6 +32,8 @@ def combine(csv1,csv2):
 			print('%s not available in second dict'%(key))
 	tuple=list(dict3.items())[::-1]
 	return tuple
+
+
 
 def test():
 	data=combine('000001.csv','399106.csv')
